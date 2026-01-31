@@ -1,0 +1,18 @@
+{
+    "jumper": {
+        "user": "jumper_user",
+        "host": "1.2.3.4",
+        "port": 22,
+        "storage_dir": "/tmp/",
+        "key": "~/.ssh/id_rsa_jumper"
+    },
+    "target": {
+        "user": "target_user",
+        "host": "5.6.7.8",
+        "port": 22,
+        "workdir": "/path/to/remote/workdir",
+        "key": "~/.ssh/id_rsa_target",
+        "download_script": "python3 download_script.py --input ./hashList.txt --output ./output"
+    },
+    "local_download_dir": "/path/to/local/download/dir"
+}
