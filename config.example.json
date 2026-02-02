@@ -14,5 +14,6 @@
         "key": "~/.ssh/id_rsa_target",
         "download_script": "python3 download_script.py --input ./hashList.txt --output ./output"
     },
-    "local_download_dir": "/path/to/local/download/dir"
+    "local_download_dir": "/path/to/local/download/dir",
+    "rule_hash_mapping_file": "/path/to/Rule_Hash_Mapping.csv"
 }

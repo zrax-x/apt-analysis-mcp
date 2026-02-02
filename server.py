@@ -1,10 +1,14 @@
 from fastmcp import FastMCP
 from tools.sample_downloader import download_samples as download_samples_api
+from tools.rule_hash_query import RuleHashQuery
 import os
 import json
 
 # Create an MCP server
 mcp = FastMCP("apt-analysis")
+
+# Initialize rule hash query
+rule_query = None
 
 def load_config():
     """Load configuration from config.json"""
@@ -14,6 +18,15 @@ def load_config():
 
 # Load config globally
 config = load_config()
+
+# Initialize rule hash query
+try:
+    mapping_file = config.get("rule_hash_mapping_file", None)
+    rule_query = RuleHashQuery(mapping_file)
+    print(f"Loaded {len(rule_query.mapping)} rule mappings from {rule_query.mapping_file}", flush=True)
+except Exception as e:
+    print(f"Warning: Failed to load rule hash mapping: {e}", flush=True)
+    rule_query = None
 
 @mcp.tool()
 def download_samples(hash_list: list[str], output_dir: str = None) -> str:
@@ -52,6 +65,65 @@ def download_samples(hash_list: list[str], output_dir: str = None) -> str:
         return f"Successfully downloaded samples to {path}"
     else:
         return f"Failed to download samples: {error}"
+
+
+@mcp.tool()
+def get_rule_sha256_list(rule: str, namespace: str = None) -> dict:
+    """
+    Get SHA256 hash list for a YARA rule.
+
+    Args:
+        rule: YARA rule name (e.g., "APT_xxx")
+        namespace: Optional YARA file path for exact matching (e.g., "./yara_rules/xxx/pe_rules/abc.yara")
+    
+    Returns:
+        Dictionary containing:
+        - success: bool
+        - sha256_hashes: list of SHA256 hash strings (ready for download)
+        - count: number of SHA256 hashes
+        - error: error message if failed
+    
+    Example response:
+        {
+            "success": true,
+            "sha256_hashes": ["3123bbd5564f4381820fb8da5810bd4d9718b5c80a7e8f055961007c6f30daff", ...],
+            "count": 9,
+            "error": null
+        }
+    """
+    if rule_query is None:
+        return {
+            "success": False,
+            "sha256_hashes": [],
+            "count": 0,
+            "error": "Rule hash mapping not loaded. Please ensure Rule_Hash_Mapping.csv exists."
+        }
+    
+    try:
+        sha256_hashes = rule_query.get_sha256_list(rule, namespace)
+        
+        if not sha256_hashes:
+            return {
+                "success": False,
+                "sha256_hashes": [],
+                "count": 0,
+                "error": f"No SHA256 hashes found for rule: {rule}"
+            }
+        
+        return {
+            "success": True,
+            "sha256_hashes": sha256_hashes,
+            "count": len(sha256_hashes),
+            "error": None
+        }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "sha256_hashes": [],
+            "count": 0,
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     mcp.run()
